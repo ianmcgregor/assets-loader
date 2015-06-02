@@ -1,17 +1,37 @@
 # assets-loader
 
-[![NPM version](https://badge.fury.io/js/assets-loader.svg)](http://badge.fury.io/js/assets-loader) [![Bower version](https://badge.fury.io/bo/assets-loader.svg)](http://badge.fury.io/bo/assets-loader) [![Build Status](https://secure.travis-ci.org/ianmcgregor/assets-loader.png)](https://travis-ci.org/ianmcgregor/assets-loader)
-
 A simple batch assets loader.
 
-### Installation
-
-* npm: ```npm install usfl --save-dev```
-* bower: ```bower install usfl --save-dev```
 
 ### Usage
 
+```javascript
+var images = [];
+for(var i = 0; i < 50; i++) {
+  images.push({
+    url: 'http://lorempixel.com/100/100?' + i,
+    type: 'jpg'
+  });
+}
 
+var loader = new AssetsLoader({
+  assets: images
+})
+.on('error', function(error) {
+  container.innerHTML = error;
+})
+.on('progress', function(progress) {
+  container.innerHTML = (progress * 100).toFixed() + '%';
+})
+.on('complete', function(files, map) {
+  console.log(files, map);
+  container.innerHTML = '';
+  files.forEach(function(image) {
+    container.appendChild(image);
+  })
+})
+.start();
+```
 
 ### Dev setup
 
