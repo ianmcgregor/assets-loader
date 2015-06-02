@@ -1,0 +1,22 @@
+{
+  "name": "assets-loader",
+  "version": "0.0.0",
+  "homepage": "https://github.com/ianmcgregor/assets-loader",
+  "authors": [
+    "Ian McGregor <imcgrgr@gmail.com>"
+  ],
+  "description": "A simple batch assets loader.",
+  "main": "dist/assets-loader.js",
+  "moduleType": [
+    "node",
+    "amd",
+    "globals"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test"
+  ]
+}

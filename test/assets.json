@@ -1,0 +1,23 @@
+{
+  "image": [
+    "http://placekitten.com/g/200/300",
+    "http://placekitten.com/1000/1000",
+    "http://placekitten.com/g/400/200",
+    "http://placekitten.com/g/200/150"
+  ],
+  "audio": [
+    {
+      "ogg": "https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/music.ogg",
+      "mp3": "https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/music.mp3"
+    }
+  ],
+  "video": [
+    {
+      "mp4": "https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.mp4",
+      "webm": "https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm"
+    }
+  ],
+  "json": [
+    "http://graph.facebook.com/facebook"
+  ]
+}

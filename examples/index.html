@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>examples</title>
+  <link href="css/styles.css" rel="stylesheet">
+  <link href="css/paraiso.light.css" rel="stylesheet">
+</head>
+<body>
+    <section>
+      <header>
+        <h1>assets loader</h1>
+      </header>
+
+      <header>
+        <h2>images</h2>
+      </header>
+
+      <div class="Container" data-js="container"></div>
+
+      <pre><code class="js">
+    var images = [];
+    for(var i = 0; i < 50; i++) {
+      images.push({
+        url: 'http://lorempixel.com/100/100?' + i,
+        type: 'jpg'
+      });
+    }
+
+    var loader = new AssetsLoader({
+      assets: images
+    })
+    .on('error', function(error) {
+      container.innerHTML = error;
+    })
+    .on('progress', function(progress) {
+      container.innerHTML = (progress * 100).toFixed() + '%';
+    })
+    .on('complete', function(files, map) {
+      console.log(files, map);
+      container.innerHTML = '';
+      files.forEach(function(image) {
+        container.appendChild(image);
+      })
+    })
+    .start();
+      </code></pre>
+
+      <header>
+        <h2>video</h2>
+      </header>
+
+      <div class="Container" data-js="container-video"></div>
+
+      <pre><code class="js">
+    var container = document.querySelector('[data-js="container-video"]');
+    var loader = new AssetsLoader()
+    .add({
+      id: 'video',
+      url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm',
+      blob: true
+    })
+    .on('error', function(error) {
+      container.innerHTML = error;
+    })
+    .on('progress', function(progress) {
+      container.innerHTML = (progress * 100).toFixed() + '%';
+    })
+    .on('complete', function(files, map) {
+      console.log(files, map);
+      container.innerHTML = '';
+      var el = document.createElement('video');
+      container.appendChild(el);
+      // var url = files[0];
+      var url = map.video;
+      if(window.Blob && url instanceof window.Blob) {
+        url = window.URL.createObjectURL(url);
+        var revoke = function() {
+          el.removeEventListener('canplaythrough', revoke);
+          window.URL.revokeObjectURL(url);
+        };
+        el.addEventListener('canplaythrough', revoke);
+      }
+      el.preload = 'auto';
+      el.controls = 'controls';
+      el.src = url;
+      el.load();
+      AssetsLoader.stats.log();
+    })
+    .start();
+      </code></pre>
+
+    </section>
+
+    <script src="js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="../dist/assets-loader.js"></script>
+    <script>
+
+      // images
+
+      (function() {
+        var container = document.querySelector('[data-js="container"]');
+        var images = [];
+        for(var i = 0; i < 50; i++) {
+          images.push({
+            url: 'http://lorempixel.com/100/100?' + i,
+            type: 'jpg'
+          });
+        }
+        var loader = new AssetsLoader({
+          assets: images
+        })
+        .on('error', function(error) {
+          container.innerHTML = error;
+        })
+        .on('progress', function(progress) {
+          container.innerHTML = (progress * 100).toFixed() + '%';
+        })
+        .on('complete', function(files, map) {
+          console.log(files, map);
+          container.innerHTML = '';
+          files.forEach(function(image) {
+            container.appendChild(image);
+          })
+          AssetsLoader.stats.log();
+        })
+        .start();
+      }());
+
+      // video (blob)
+
+      (function() {
+        var container = document.querySelector('[data-js="container-video"]');
+        var loader = new AssetsLoader()
+        .add({
+          id: 'video',
+          url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm',
+          blob: true
+        })
+        .on('error', function(error) {
+          container.innerHTML = error;
+        })
+        .on('progress', function(progress) {
+          container.innerHTML = (progress * 100).toFixed() + '%';
+        })
+        .on('complete', function(files, map) {
+          console.log(files, map);
+          container.innerHTML = '';
+          // var src = files[0];
+          var src = map.video;
+          if(window.Blob && src instanceof window.Blob) {
+            src = window.URL.createObjectURL(src);
+            el = document.createElement('video');
+            var revoke = function() {
+              el.removeEventListener('canplaythrough', revoke);
+              window.URL.revokeObjectURL(src);
+            };
+            el.addEventListener('canplaythrough', revoke);
+            el.preload = 'auto';
+            el.src = src;
+            el.load();
+          } else {
+            el = src
+          }
+          el.controls = 'controls';
+          container.appendChild(el);
+          AssetsLoader.stats.log();
+        })
+        .start();
+      }());
+
+      // json
+
+      // audio
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# OS
+
+.*
+~*
+!/.gitattributes
+!/.gitignore
+!/.gitinclude
+!/.jshintrc
+!/.travis.yml
+
+#Icon?
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+user.properties
+
+bower_components/
+node_modules/
+temp/
