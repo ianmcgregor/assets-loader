@@ -21,10 +21,10 @@ function AssetsLoader(config) {
     var isTouchLocked = !!config.isTouchLocked;
     var blob = !!(config.blob && browserHasBlob);
     var webAudioContext = config.webAudioContext;
+    var log = !!config.log;
 
     var assetsLoader;
     var map = {};
-    var files = [];
     var queue = [];
     var numLoaded = 0;
     var numTotal = 0;
@@ -42,6 +42,11 @@ function AssetsLoader(config) {
     };
 
     var get = function(id) {
+        if (!arguments.length) {
+            return Object.keys(map).map(function(key) {
+                return map[key];
+            });
+        }
         return map[id];
     };
 
@@ -64,6 +69,7 @@ function AssetsLoader(config) {
         options.type = options.type || options.url.split('?')[0].split('.').pop().toLowerCase();
         options.crossOrigin = options.crossOrigin || crossOrigin;
         options.webAudioContext = options.webAudioContext || webAudioContext;
+        options.log = log;
 
         return options;
     };
@@ -90,8 +96,6 @@ function AssetsLoader(config) {
         numLoaded++;
         assetsLoader.emit('progress', numLoaded / numTotal);
         map[key] = file;
-        files.push(file);
-
         checkComplete();
     };
 
@@ -107,7 +111,7 @@ function AssetsLoader(config) {
 
     var checkComplete = function() {
         if (numLoaded >= numTotal) {
-            assetsLoader.emit('complete', files, map);
+            assetsLoader.emit('complete', map);
         }
     };
 
@@ -119,7 +123,6 @@ function AssetsLoader(config) {
         assetsLoader.off('progress');
         assetsLoader.off('complete');
         map = {};
-        files = [];
         webAudioContext = null;
         numTotal = 0;
         numLoaded = 0;
@@ -164,6 +167,7 @@ AssetsLoader.Loader = function(options) {
     var isTouchLocked = options.isTouchLocked;
     var blob = options.blob && browserHasBlob;
     var webAudioContext = options.webAudioContext;
+    var log = options.log;
 
     var loader;
     var loadHandler;
@@ -240,7 +244,7 @@ AssetsLoader.Loader = function(options) {
 
     var success = function() {
         if (request && request.status < 400) {
-            AssetsLoader.stats.update(request, startTime, url);
+            AssetsLoader.stats.update(request, startTime, url, log);
             return true;
         }
         errorHandler(request && request.statusText);
@@ -439,7 +443,7 @@ AssetsLoader.Loader = function(options) {
 AssetsLoader.stats = {
     mbs: 0,
     secs: 0,
-    update: function(request, startTime, url) {
+    update: function(request, startTime, url, log) {
         var length;
         var headers = request.getAllResponseHeaders();
         if (headers) {
@@ -455,13 +459,14 @@ AssetsLoader.stats = {
             var secs = (Date.now() - startTime) / 1000;
             this.secs += secs;
             this.mbs += mbs;
-            this.log(url, mbs, secs);
-        } else {
+            if (log) {
+                this.log(url, mbs, secs);
+            }
+        } else if(log) {
             console.warn.call(console, 'Can\'t get Content-Length:', url);
         }
     },
     log: function(url, mbs, secs) {
-        console.log.call(console, url, mbs, secs);
         if (url) {
             var file = 'File loaded: ' +
                 url.substr(url.lastIndexOf('/') + 1) +

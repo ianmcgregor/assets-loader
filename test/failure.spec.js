@@ -1,7 +1,6 @@
 'use strict';
 
 var AssetsLoader = require('../src/index.js');
-var files = require('./files.js');
 
 describe('asset loader', function() {
 

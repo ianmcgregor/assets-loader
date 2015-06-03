@@ -57,19 +57,20 @@ var loader = new AssetsLoader({
     .on('progress', function(progress) {
         console.log((progress * 100).toFixed() + '%');
     })
-    .on('complete', function(files, map) {
-        // array of files
-        files.forEach(function(file) {
-            console.log(file);
-        });
-        // hashmap of files
+    .on('complete', function(map) {
+        // map is a hashmap of loaded files
         // keys are either ids if specified or urls
         Object.keys(map).forEach(function(key) {
             console.log(key, map[key]);
         });
-        // get by id
-        var picture = map.picture;
-        console.log(picture); // <img />
+        // get by id from map arg
+        console.log(map.picture); // <img />
+        // get by id from loader instance
+        console.log(loader.get('picture')); // <img />
+        // get array of all loaded files
+        loader.get().forEach(function(file) {
+            console.log(file);
+        });
     })
     .start();
 
@@ -116,8 +117,8 @@ loader.destroy();
 
 // stats
 
-console.log(AssetsLoader.getMbps()); // e.g. 3.2
-AssetsLoader.log(); // e.g. Total loaded: 2.00mb time: 2.00s speed: 1.00mbps
+console.log(AssetsLoader.stats.getMbps()); // e.g. 3.2
+AssetsLoader.stats.log(); // e.g. Total loaded: 2.00mb time: 2.00s speed: 1.00mbps
 ```
 
 ### Dev setup
