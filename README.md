@@ -4,6 +4,8 @@
 
 A simple batch assets loader.
 
+<http://ianmcgregor.github.io/assets-loader/examples/>
+
 ### Installation
 
 npm:
