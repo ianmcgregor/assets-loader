@@ -50,7 +50,10 @@ var loader = new AssetsLoader({
             { url: 'audio.mp3', webAudioContext: audioContext },
             // binary / arraybuffer
             'binary_file.bin',
-            { url: 'binary_file', type: 'bin' }
+            { url: 'binary_file', type: 'bin' },
+            // text
+            'text_file.txt',
+            { url: 'text_file', type: 'text' }
         ]
     })
     .on('error', function(error) {
