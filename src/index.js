@@ -202,7 +202,12 @@ AssetsLoader.Loader = function(options) {
                 loadVideo();
                 break;
             case 'bin':
+            case 'binary':
                 loadXHR('arraybuffer');
+                break;
+            case 'txt':
+            case 'text':
+                loadXHR('text');
                 break;
             default:
                 throw 'AssetsLoader ERROR: Unknown type for file with URL: ' + url + ' (' + type + ')';

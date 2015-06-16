@@ -13,6 +13,7 @@ module.exports = {
   'audio': assets.audio[0][extAudio],
   'video': assets.video[0][extVideo],
   'json': assets.json[0],
+  'text': assets.text[0],
   'images': [
     {
       url: assets.image[2],
