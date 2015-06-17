@@ -314,7 +314,7 @@ AssetsLoader.Loader = function(options) {
 
     // audio
 
-    var loadAudio = function(webAudioContext) {
+    var loadAudio = function() {
         if (webAudioContext) {
             loadAudioBuffer();
         } else {
