@@ -145,6 +145,11 @@ function AssetsLoader(config) {
         },
         destroy: {
             value: destroy
+        },
+        getIds: {
+            value: function() {
+                return Object.keys(map);
+            }
         }
     });
 
