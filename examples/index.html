@@ -94,6 +94,80 @@
 
     </section>
 
+    <header>
+      <h2>groups</h2>
+    </header>
+
+    <div class="Container" data-js="container-groups">
+        <h2>group a</h2>
+        <div class="Container" data-js="container-groups-images"></div>
+        <h2>group b</h2>
+        <div class="Container" data-js="container-groups-audio"></div>
+    </div>
+
+    <pre><code class="js">
+    var images = [];
+    for (var i = 0; i < 4; i++) {
+        images.push({
+            id: ('image' + i),
+            url: 'http://lorempixel.com/200/200?' + i,
+            type: 'jpg'
+        });
+    }
+    var loader = assetsLoader()
+        .add({
+            id: 'groupA',
+            assets: images
+        })
+        .add({
+            id: 'groupB',
+            assets: [{
+                id: 'select',
+                url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/select.ogg'
+            },{
+                id: 'collect',
+                url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/collect.ogg'
+            },{
+                id: 'hit',
+                url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/hit.ogg'
+            }]
+        })
+        .on('error', function(error) {
+            container.innerHTML = error;
+        })
+        .on('complete', function(map) {
+            console.log(map);
+            containerImages.innerHTML = '';
+            containerAudio.innerHTML = '';
+
+            loader.get('groupA')
+                .forEach(function(asset) {
+                    asset.file.alt = asset.id;
+                    containerImages.appendChild(asset.file);
+                });
+
+            loader.get('groupB')
+                .forEach(function(asset) {
+                    asset.file.controls = 'controls';
+                    containerAudio.appendChild(asset.file);
+                });
+
+        })
+        .start();
+
+        loader.group('groupA')
+            .on('progress', function(progress) {
+                containerImages.innerHTML = (progress * 100).toFixed() + '%';
+            });
+
+        loader.group('groupB')
+            .on('progress', function(progress) {
+                containerAudio.innerHTML = (progress * 100).toFixed() + '%';
+            });
+    </code></pre>
+
+    </section>
+
     <script src="js/highlight.pack.js"></script>
     <script>hljs.initHighlightingOnLoad();</script>
     <script src="../dist/assets-loader.js"></script>
@@ -101,78 +175,146 @@
 
     // images
 
-    (function() {
-        var container = document.querySelector('[data-js="container"]');
-        var images = [];
-        for (var i = 0; i < 50; i++) {
-            images.push({
-                url: 'http://lorempixel.com/100/100?' + i,
-                type: 'jpg'
-            });
-        }
-        var loader = assetsLoader({
-                assets: images
-            })
-            .on('error', function(error) {
-                container.innerHTML = error;
-            })
-            .on('progress', function(progress) {
-                container.innerHTML = (progress * 100).toFixed() + '%';
-            })
-            .on('complete', function(map) {
-                console.log(map);
-                container.innerHTML = '';
-                this.get().forEach(function(image) {
-                    container.appendChild(image);
-                })
-            })
-            .start();
-    }());
+    // (function() {
+    //     var container = document.querySelector('[data-js="container"]');
+    //     var images = [];
+    //     for (var i = 0; i < 50; i++) {
+    //         images.push({
+    //             url: 'http://lorempixel.com/100/100?' + i,
+    //             type: 'jpg'
+    //         });
+    //     }
+    //     var loader = assetsLoader({
+    //             assets: images
+    //         })
+    //         .on('error', function(error) {
+    //             container.innerHTML = error;
+    //         })
+    //         .on('progress', function(progress) {
+    //             container.innerHTML = (progress * 100).toFixed() + '%';
+    //         })
+    //         .on('complete', function(map) {
+    //             console.log(map);
+    //             container.innerHTML = '';
+    //             this.get().forEach(function(image) {
+    //                 container.appendChild(image);
+    //             })
+    //         })
+    //         .start();
+    // }());
 
     // video (blob)
 
+    // (function() {
+    //     var container = document.querySelector('[data-js="container-video"]');
+    //     var loader = assetsLoader({ log: true })
+    //         .add({
+    //             id: 'video',
+    //             url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm',
+    //             blob: true
+    //         })
+    //         .on('error', function(error) {
+    //             container.innerHTML = error;
+    //         })
+    //         .on('progress', function(progress) {
+    //             container.innerHTML = (progress * 100).toFixed() + '%';
+    //         })
+    //         .on('complete', function(map) {
+    //             console.log(map);
+    //             container.innerHTML = '';
+    //             // var src = files[0];
+    //             var src = map.video;
+    //             if (window.Blob && src instanceof window.Blob) {
+    //                 src = window.URL.createObjectURL(src);
+    //                 el = document.createElement('video');
+    //                 var revoke = function() {
+    //                     el.removeEventListener('canplaythrough', revoke);
+    //                     window.URL.revokeObjectURL(src);
+    //                 };
+    //                 el.addEventListener('canplaythrough', revoke);
+    //                 el.preload = 'auto';
+    //                 el.src = src;
+    //                 el.load();
+    //             } else {
+    //                 el = src
+    //             }
+    //             el.controls = 'controls';
+    //             container.appendChild(el);
+    //         })
+    //         .start();
+    // }());
+
+    // groups
+
     (function() {
-        var container = document.querySelector('[data-js="container-video"]');
-        var loader = assetsLoader({ log: true })
+        var container = document.querySelector('[data-js="container-groups"]');
+        var containerImages = document.querySelector('[data-js="container-groups-images"]');
+        var containerAudio = document.querySelector('[data-js="container-groups-audio"]');
+        var images = [];
+        for (var i = 0; i < 4; i++) {
+            images.push({
+                id: ('image' + i),
+                url: 'http://lorempixel.com/200/200?' + i,
+                type: 'jpg'
+            });
+        }
+        var loader = assetsLoader()
             .add({
-                id: 'video',
-                url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm',
-                blob: true
+                id: 'groupA',
+                assets: images
+            })
+            .add({
+                id: 'groupB',
+                assets: [{
+                    id: 'select',
+                    url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/select.ogg'
+                },{
+                    id: 'collect',
+                    url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/collect.ogg'
+                },{
+                    id: 'hit',
+                    url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/hit.ogg'
+                }]
             })
             .on('error', function(error) {
                 container.innerHTML = error;
             })
-            .on('progress', function(progress) {
-                container.innerHTML = (progress * 100).toFixed() + '%';
-            })
             .on('complete', function(map) {
                 console.log(map);
-                container.innerHTML = '';
-                // var src = files[0];
-                var src = map.video;
-                if (window.Blob && src instanceof window.Blob) {
-                    src = window.URL.createObjectURL(src);
-                    el = document.createElement('video');
-                    var revoke = function() {
-                        el.removeEventListener('canplaythrough', revoke);
-                        window.URL.revokeObjectURL(src);
-                    };
-                    el.addEventListener('canplaythrough', revoke);
-                    el.preload = 'auto';
-                    el.src = src;
-                    el.load();
-                } else {
-                    el = src
-                }
-                el.controls = 'controls';
-                container.appendChild(el);
-            })
-            .start();
+
+                containerImages.innerHTML = '';
+                containerAudio.innerHTML = '';
+
+                loader.get('groupA')
+                    .forEach(function(asset) {
+                        asset.file.alt = asset.id;
+                        containerImages.appendChild(asset.file);
+                    });
+
+                loader.get('groupB')
+                    .forEach(function(asset) {
+                        asset.file.controls = 'controls';
+                        containerAudio.appendChild(asset.file);
+                    });
+
+            });
+
+
+            loader.getLoader('groupA')
+                .on('progress', function(progress) {
+                    containerImages.innerHTML = (progress * 100).toFixed() + '%';
+                });
+
+            var b = loader.getLoader('groupB')
+                .on('progress', function(progress) {
+                    containerAudio.innerHTML = (progress * 100).toFixed() + '%';
+                });
+
+            console.log(b.getLoader('select'));
+
+            loader.start();
+
     }());
-
-    // json
-
-    // audio
 
     </script>
 </body>
