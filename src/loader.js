@@ -64,7 +64,7 @@ module.exports = function(options) {
             return;
         }
         loader.emit('progress', 1);
-        loader.emit('complete', id, file);
+        loader.emit('complete', {id: id, file: file});
         removeListeners();
     };
 
@@ -271,6 +271,8 @@ module.exports = function(options) {
         window.clearTimeout(timeout);
     };
 
+    // emits: progress, error, complete
+
     loader = Object.create(Emitter.prototype, {
         _events: {
             value: {}
@@ -280,6 +282,9 @@ module.exports = function(options) {
         },
         destroy: {
             value: destroy
+        },
+        id: {
+            value: options.id
         }
     });
 
