@@ -29,7 +29,7 @@
       });
   }
 
-  var loader = new AssetsLoader({
+  var loader = assetsLoader({
           log: true,
           assets: images
       })
@@ -57,7 +57,7 @@
 
       <pre><code class="js">
   var container = document.querySelector('[data-js="container-video"]');
-  var loader = new AssetsLoader({ log: true })
+  var loader = assetsLoader({ log: true })
       .add({
           id: 'video',
           url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm',
@@ -110,7 +110,7 @@
                 type: 'jpg'
             });
         }
-        var loader = new AssetsLoader({
+        var loader = assetsLoader({
                 assets: images
             })
             .on('error', function(error) {
@@ -133,7 +133,7 @@
 
     (function() {
         var container = document.querySelector('[data-js="container-video"]');
-        var loader = new AssetsLoader({ log: true })
+        var loader = assetsLoader({ log: true })
             .add({
                 id: 'video',
                 url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm',

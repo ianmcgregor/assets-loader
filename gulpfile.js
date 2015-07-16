@@ -15,7 +15,7 @@ var browserify = require('browserify'),
     uglify = require('gulp-uglify'),
     watchify = require('watchify');
 
-var standaloneName = 'AssetsLoader',
+var standaloneName = 'assetsLoader',
     entryFileName = 'index.js',
     bundleFileName = 'assets-loader.js';
 
