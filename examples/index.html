@@ -175,74 +175,71 @@
 
     // images
 
-    // (function() {
-    //     var container = document.querySelector('[data-js="container"]');
-    //     var images = [];
-    //     for (var i = 0; i < 50; i++) {
-    //         images.push({
-    //             url: 'http://lorempixel.com/100/100?' + i,
-    //             type: 'jpg'
-    //         });
-    //     }
-    //     var loader = assetsLoader({
-    //             assets: images
-    //         })
-    //         .on('error', function(error) {
-    //             container.innerHTML = error;
-    //         })
-    //         .on('progress', function(progress) {
-    //             container.innerHTML = (progress * 100).toFixed() + '%';
-    //         })
-    //         .on('complete', function(map) {
-    //             console.log(map);
-    //             container.innerHTML = '';
-    //             this.get().forEach(function(image) {
-    //                 container.appendChild(image);
-    //             })
-    //         })
-    //         .start();
-    // }());
+    (function() {
+        var container = document.querySelector('[data-js="container"]');
+        var images = [];
+        for (var i = 0; i < 50; i++) {
+            images.push({
+                url: 'http://lorempixel.com/100/100?' + i,
+                type: 'jpg'
+            });
+        }
+        var loader = assetsLoader({
+                assets: images
+            })
+            .on('error', function(error) {
+                container.innerHTML = error;
+            })
+            .on('progress', function(progress) {
+                container.innerHTML = (progress * 100).toFixed() + '%';
+            })
+            .on('complete', function(assets) {
+                container.innerHTML = '';
+                assets.forEach(function(asset) {
+                    container.appendChild(asset.file);
+                })
+            })
+            .start();
+    }());
 
     // video (blob)
 
-    // (function() {
-    //     var container = document.querySelector('[data-js="container-video"]');
-    //     var loader = assetsLoader({ log: true })
-    //         .add({
-    //             id: 'video',
-    //             url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm',
-    //             blob: true
-    //         })
-    //         .on('error', function(error) {
-    //             container.innerHTML = error;
-    //         })
-    //         .on('progress', function(progress) {
-    //             container.innerHTML = (progress * 100).toFixed() + '%';
-    //         })
-    //         .on('complete', function(map) {
-    //             console.log(map);
-    //             container.innerHTML = '';
-    //             // var src = files[0];
-    //             var src = map.video;
-    //             if (window.Blob && src instanceof window.Blob) {
-    //                 src = window.URL.createObjectURL(src);
-    //                 el = document.createElement('video');
-    //                 var revoke = function() {
-    //                     el.removeEventListener('canplaythrough', revoke);
-    //                     window.URL.revokeObjectURL(src);
-    //                 };
-    //                 el.addEventListener('canplaythrough', revoke);
-    //                 el.preload = 'auto';
-    //                 el.src = src;
-    //                 el.load();
-    //             } else {
-    //                 el = src
-    //             }
-    //             el.controls = 'controls';
-    //             container.appendChild(el);
-    //         })
-    //         .start();
-    // }());
+    (function() {
+        var container = document.querySelector('[data-js="container-video"]');
+        var loader = assetsLoader({ log: true })
+            .add({
+                id: 'video',
+                url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm',
+                blob: true
+            })
+            .on('error', function(error) {
+                container.innerHTML = error;
+            })
+            .on('progress', function(progress) {
+                container.innerHTML = (progress * 100).toFixed() + '%';
+            })
+            .on('complete', function() {
+                container.innerHTML = '';
+                var src = this.get('video');
+                if (window.Blob && src instanceof window.Blob) {
+                    src = window.URL.createObjectURL(src);
+                    el = document.createElement('video');
+                    var revoke = function() {
+                        el.removeEventListener('canplaythrough', revoke);
+                        window.URL.revokeObjectURL(src);
+                    };
+                    el.addEventListener('canplaythrough', revoke);
+                    el.preload = 'auto';
+                    el.src = src;
+                    el.load();
+                } else {
+                    el = src
+                }
+                el.controls = 'controls';
+                container.appendChild(el);
+            })
+            .start();
+    }());
 
     // groups
 
@@ -279,8 +276,16 @@
             .on('error', function(error) {
                 container.innerHTML = error;
             })
-            .on('complete', function(map) {
-                console.log(map);
+            .on('childcomplete', function(asset) {
+                console.debug('childcomplete', asset.id);
+            })
+            .on('complete', function(assets) {
+                assets.forEach(function(asset) {
+                    console.debug(asset.id);
+                    asset.file.forEach(function(file) {
+                        console.debug(' - ' + file.id);
+                    });
+                });
 
                 containerImages.innerHTML = '';
                 containerAudio.innerHTML = '';
@@ -297,6 +302,16 @@
                         containerAudio.appendChild(asset.file);
                     });
 
+                // console.debug('select sound asset:', b.get('select'), b.getLoader('select').loaded);
+                // console.debug('select loaded:', b.getLoader('select').loaded);
+                // console.debug('select loader file:', b.getLoader('select').file);
+                //
+                // console.debug('loader loaded:', loader.loaded);
+                // console.debug('groupA loaded:', loader.getLoader('groupA').loaded);
+                // console.debug('groupB loaded:', loader.getLoader('groupB').loaded);
+                //
+                // console.debug('find groupB:', loader.find('groupB'));
+                // console.debug('find image1:', loader.find('image1'));
             });
 
 
@@ -310,7 +325,7 @@
                     containerAudio.innerHTML = (progress * 100).toFixed() + '%';
                 });
 
-            console.log(b.getLoader('select'));
+            // console.debug('select sound loader:', b.getLoader('select'));
 
             loader.start();
 
