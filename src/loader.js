@@ -19,6 +19,7 @@ module.exports = function(options) {
     var request;
     var startTime;
     var timeout;
+    var file;
 
     var start = function() {
         startTime = Date.now();
@@ -59,12 +60,13 @@ module.exports = function(options) {
         }
     };
 
-    var dispatchComplete = function(file) {
-        if (!file) {
+    var dispatchComplete = function(data) {
+        if (!data) {
             return;
         }
+        file = {id: id, file: data, type: type};
         loader.emit('progress', 1);
-        loader.emit('complete', {id: id, file: file});
+        loader.emit('complete', file, id, type);
         removeListeners();
     };
 
@@ -267,6 +269,7 @@ module.exports = function(options) {
 
         request = null;
         webAudioContext = null;
+        file = null;
 
         window.clearTimeout(timeout);
     };
@@ -277,14 +280,24 @@ module.exports = function(options) {
         _events: {
             value: {}
         },
+        id: {
+            value: options.id
+        },
         start: {
             value: start
         },
+        loaded: {
+            get: function() {
+                return !!file;
+            }
+        },
+        file: {
+            get: function() {
+                return file;
+            }
+        },
         destroy: {
             value: destroy
-        },
-        id: {
-            value: options.id
         }
     });
 

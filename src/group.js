@@ -1,6 +1,5 @@
 'use strict';
 
-var browserHasBlob = require('./browser-has-blob.js');
 var Emitter = require('./emitter.js');
 var createLoader = require('./loader');
 var autoId = 0;
@@ -15,13 +14,13 @@ module.exports = function createGroup(config) {
     var loaders = {};
 
     var add = function(options) {
+        // console.debug('add', options);
         if (Array.isArray(options)) {
-            options.forEach(function(item) {
-                add(item);
-            });
+            options.forEach(add);
             return group;
         }
-        var isGroup = options.assets && Array.isArray(options.assets);
+        var isGroup = !!options.assets && Array.isArray(options.assets);
+        // console.debug('isGroup', isGroup);
         var loader;
         if (isGroup) {
             loader = createGroup(configure(options, config));
@@ -38,6 +37,26 @@ module.exports = function createGroup(config) {
             return assets;
         }
         return map[id];
+    };
+
+    var find = function(id) {
+        if (get(id)) {
+            return get(id);
+        }
+        var found = null;
+        // assets.filter(function(asset) {
+        //     return asset.type === 'group';
+        // }).map(function(asset) {
+        //     return loaders[asset.id];
+        // }).some(function(loader) {
+        //     found = loader.find(id);
+        //     return !!found;
+        // });
+        Object.keys(loaders).some(function(key) {
+            found = loaders[key].find && loaders[key].find(id);
+            return !!found;
+        });
+        return found;
     };
 
     var getExtension = function(url) {
@@ -79,6 +98,8 @@ module.exports = function createGroup(config) {
                 .start();
         });
 
+        queue = [];
+
         return group;
     };
 
@@ -87,12 +108,15 @@ module.exports = function createGroup(config) {
         group.emit('progress', loaded / numTotal);
     };
 
-    var completeHandler = function(asset) {
-        console.debug('completeHandler:', asset);
+    var completeHandler = function(asset, id, type) {
+        if (Array.isArray(asset)) {
+            asset = { id: id, file: asset, type: type };
+        }
         numLoaded++;
         group.emit('progress', numLoaded / numTotal);
         map[asset.id] = asset.file;
         assets.push(asset);
+        group.emit('childcomplete', asset);
         checkComplete();
     };
 
@@ -108,10 +132,7 @@ module.exports = function createGroup(config) {
 
     var checkComplete = function() {
         if (numLoaded >= numTotal) {
-            group.emit('complete', {
-                id: config.id,
-                file: assets
-            });
+            group.emit('complete', assets, config.id, 'group');
         }
     };
 
@@ -137,6 +158,11 @@ module.exports = function createGroup(config) {
         _events: {
             value: {}
         },
+        id: {
+            get: function() {
+                return config.id;
+            }
+        },
         add: {
             value: add
         },
@@ -146,24 +172,26 @@ module.exports = function createGroup(config) {
         get: {
             value: get
         },
-        destroy: {
-            value: destroy
-        },
-        getIds: {
-            value: function() {
-                return Object.keys(map);
-            }
+        find: {
+            value: find
         },
         getLoader: {
             value: function(id) {
-                console.log('getLoader', loaders)
                 return loaders[id];
             }
         },
-        id: {
+        loaded: {
             get: function() {
-                return config.id;
+                return numLoaded >= numTotal;
             }
+        },
+        file: {
+            get: function() {
+                return assets;
+            }
+        },
+        destroy: {
+            value: destroy
         }
     });
 
