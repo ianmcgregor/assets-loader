@@ -1,505 +1,4 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.AssetsLoader = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
-'use strict';
-
-var Emitter = _dereq_('./emitter.js');
-
-var browserHasBlob = (function() {
-    try {
-        return !!new Blob();
-    } catch (e) {
-        return false;
-    }
-}());
-
-/*
- * Group
- */
-
-function AssetsLoader(config) {
-    config = config || {};
-
-    var crossOrigin = config.crossOrigin;
-    var isTouchLocked = !!config.isTouchLocked;
-    var blob = !!(config.blob && browserHasBlob);
-    var webAudioContext = config.webAudioContext;
-    var log = !!config.log;
-
-    var assetsLoader;
-    var map = {};
-    var queue = [];
-    var numLoaded = 0;
-    var numTotal = 0;
-
-    var add = function(options) {
-        if (Array.isArray(options)) {
-            options.forEach(function(item) {
-                add(item);
-            });
-            return assetsLoader;
-        }
-        var loader = new AssetsLoader.Loader(configure(options));
-        queue.push(loader);
-        return assetsLoader;
-    };
-
-    var get = function(id) {
-        if (!arguments.length) {
-            return Object.keys(map).map(function(key) {
-                return map[key];
-            });
-        }
-        return map[id];
-    };
-
-    var configure = function(options) {
-        if (typeof options === 'string') {
-            var url = options;
-            options = {
-                url: url
-            };
-        }
-
-        if (options.isTouchLocked === undefined) {
-            options.isTouchLocked = isTouchLocked;
-        }
-        if (options.blob === undefined) {
-            options.blob = blob;
-        }
-
-        options.id = options.id || options.url;
-        options.type = options.type || options.url.split('?')[0].split('.').pop().toLowerCase();
-        options.crossOrigin = options.crossOrigin || crossOrigin;
-        options.webAudioContext = options.webAudioContext || webAudioContext;
-        options.log = log;
-
-        return options;
-    };
-
-    var start = function() {
-        numTotal = queue.length;
-
-        queue.forEach(function(loader) {
-            loader.on('progress', progressHandler);
-            loader.once('complete', completeHandler);
-            loader.once('error', errorHandler);
-            loader.start();
-        });
-
-        return assetsLoader;
-    };
-
-    var progressHandler = function(progress) {
-        var loaded = numLoaded + progress;
-        assetsLoader.emit('progress', loaded / numTotal);
-    };
-
-    var completeHandler = function(key, file) {
-        numLoaded++;
-        assetsLoader.emit('progress', numLoaded / numTotal);
-        map[key] = file;
-        checkComplete();
-    };
-
-    var errorHandler = function(err) {
-        numTotal--;
-        if (assetsLoader.listeners('error').length) {
-            assetsLoader.emit('error', err);
-        } else {
-            void 0;
-        }
-        checkComplete();
-    };
-
-    var checkComplete = function() {
-        if (numLoaded >= numTotal) {
-            assetsLoader.emit('complete', map);
-        }
-    };
-
-    var destroy = function() {
-        while (queue.length) {
-            queue.pop().destroy();
-        }
-        assetsLoader.off('error');
-        assetsLoader.off('progress');
-        assetsLoader.off('complete');
-        map = {};
-        webAudioContext = null;
-        numTotal = 0;
-        numLoaded = 0;
-
-        return assetsLoader;
-    };
-
-    assetsLoader = Object.create(Emitter.prototype, {
-        _events: {
-            value: {}
-        },
-        add: {
-            value: add
-        },
-        start: {
-            value: start
-        },
-        get: {
-            value: get
-        },
-        destroy: {
-            value: destroy
-        },
-        getIds: {
-            value: function() {
-                return Object.keys(map);
-            }
-        }
-    });
-
-    if (Array.isArray(config.assets)) {
-        add(config.assets);
-    }
-
-    return Object.freeze(assetsLoader);
-}
-
-/*
- * Loader
- */
-
-AssetsLoader.Loader = function(options) {
-    var id = options.id;
-    var url = options.url;
-    var type = options.type;
-    var crossOrigin = options.crossOrigin;
-    var isTouchLocked = options.isTouchLocked;
-    var blob = options.blob && browserHasBlob;
-    var webAudioContext = options.webAudioContext;
-    var log = options.log;
-
-    var loader;
-    var loadHandler;
-    var request;
-    var startTime;
-    var timeout;
-
-    var start = function() {
-        startTime = Date.now();
-
-        switch (type) {
-            case 'json':
-                loadJSON();
-                break;
-            case 'jpg':
-            case 'png':
-            case 'gif':
-            case 'webp':
-                loadImage();
-                break;
-            case 'mp3':
-            case 'ogg':
-            case 'opus':
-            case 'wav':
-            case 'm4a':
-                loadAudio();
-                break;
-            case 'ogv':
-            case 'mp4':
-            case 'webm':
-            case 'hls':
-                loadVideo();
-                break;
-            case 'bin':
-            case 'binary':
-                loadXHR('arraybuffer');
-                break;
-            case 'txt':
-            case 'text':
-                loadXHR('text');
-                break;
-            default:
-                throw 'AssetsLoader ERROR: Unknown type for file with URL: ' + url + ' (' + type + ')';
-        }
-    };
-
-    var dispatchComplete = function(file) {
-        if (!file) {
-            return;
-        }
-        loader.emit('progress', 1);
-        loader.emit('complete', id, file);
-        removeListeners();
-    };
-
-    var loadXHR = function(responseType, customLoadHandler) {
-        loadHandler = customLoadHandler || completeHandler;
-
-        request = new XMLHttpRequest();
-        request.open('GET', url, true);
-        request.responseType = responseType;
-        request.addEventListener('progress', progressHandler);
-        request.addEventListener('load', loadHandler);
-        request.addEventListener('error', errorHandler);
-        request.send();
-    };
-
-    var progressHandler = function(event) {
-        if (event.lengthComputable) {
-            loader.emit('progress', event.loaded / event.total);
-        }
-    };
-
-    var completeHandler = function() {
-        if (success()) {
-            dispatchComplete(request.response);
-        }
-    };
-
-    var success = function() {
-        if (request && request.status < 400) {
-            AssetsLoader.stats.update(request, startTime, url, log);
-            return true;
-        }
-        errorHandler(request && request.statusText);
-        return false;
-    };
-
-    // json
-
-    var loadJSON = function() {
-        loadXHR('json', function() {
-            if (success()) {
-                var data = request.response;
-                if (typeof data === 'string') {
-                    data = JSON.parse(data);
-                }
-                dispatchComplete(data);
-            }
-        });
-    };
-
-    // image
-
-    var loadImage = function() {
-        if (blob) {
-            loadImageBlob();
-        } else {
-            loadImageElement();
-        }
-    };
-
-    var loadImageElement = function() {
-        request = new Image();
-        if (crossOrigin) {
-            request.crossOrigin = 'anonymous';
-        }
-        request.addEventListener('error', errorHandler, false);
-        request.addEventListener('load', elementLoadHandler, false);
-        request.src = url;
-    };
-
-    var elementLoadHandler = function() {
-        window.clearTimeout(timeout);
-        dispatchComplete(request);
-    };
-
-    var loadImageBlob = function() {
-        loadXHR('blob', function() {
-            if (success()) {
-                var url = window.URL.createObjectURL(request.response);
-                request = new Image();
-                request.addEventListener('error', errorHandler, false);
-                request.addEventListener('load', imageBlobHandler, false);
-                request.src = url;
-            }
-        });
-    };
-
-    var imageBlobHandler = function() {
-        window.URL.revokeObjectURL(url);
-        dispatchComplete(request);
-    };
-
-    // audio
-
-    var loadAudio = function() {
-        if (webAudioContext) {
-            loadAudioBuffer();
-        } else {
-            loadMediaElement('audio');
-        }
-    };
-
-    // video
-
-    var loadVideo = function() {
-        if (blob) {
-            loadXHR('blob');
-        } else {
-            loadMediaElement('video');
-        }
-    };
-
-    // audio buffer
-
-    var loadAudioBuffer = function() {
-        loadXHR('arraybuffer', function() {
-            if (success()) {
-                webAudioContext.decodeAudioData(
-                    request.response,
-                    function(buffer) {
-                        request = null;
-                        dispatchComplete(buffer);
-                    },
-                    function(e) {
-                        errorHandler(e);
-                    }
-                );
-            }
-        });
-    };
-
-    // media element
-
-    var loadMediaElement = function(tagName) {
-        request = document.createElement(tagName);
-
-        if (!isTouchLocked) {
-            // timeout because sometimes canplaythrough doesn't fire
-            window.clearTimeout(timeout);
-            timeout = window.setTimeout(elementLoadHandler, 2000);
-            request.addEventListener('canplaythrough', elementLoadHandler, false);
-        }
-
-        request.addEventListener('error', errorHandler, false);
-        request.preload = 'auto';
-        request.src = url;
-        request.load();
-
-        if (isTouchLocked) {
-            dispatchComplete(request);
-        }
-    };
-
-    // error
-
-    var errorHandler = function(err) {
-        window.clearTimeout(timeout);
-
-        var message = err;
-
-        if (request && request.tagName && request.error) {
-            var ERROR_STATE = ['', 'ABORTED', 'NETWORK', 'DECODE', 'SRC_NOT_SUPPORTED'];
-            message = 'MediaError: ' + ERROR_STATE[request.error.code] + ' ' + request.src;
-        } else if (request && request.statusText) {
-            message = request.statusText;
-        } else if (err && err.message) {
-            message = err.message;
-        } else if (err && err.type) {
-            message = err.type;
-        }
-
-        loader.emit('error', 'Error loading "' + url + '" ' + message);
-
-        destroy();
-    };
-
-    // clean up
-
-    var removeListeners = function() {
-        loader.off('error');
-        loader.off('progress');
-        loader.off('complete');
-
-        if (request) {
-            request.removeEventListener('progress', progressHandler);
-            request.removeEventListener('load', loadHandler);
-            request.removeEventListener('error', errorHandler);
-            request.removeEventListener('load', elementLoadHandler);
-            request.removeEventListener('canplaythrough', elementLoadHandler);
-            request.removeEventListener('load', imageBlobHandler);
-        }
-    };
-
-    var destroy = function() {
-        removeListeners();
-
-        if (request && request.abort && request.readyState < 4) {
-            request.abort();
-        }
-
-        request = null;
-        webAudioContext = null;
-
-        window.clearTimeout(timeout);
-    };
-
-    loader = Object.create(Emitter.prototype, {
-        _events: {
-            value: {}
-        },
-        start: {
-            value: start
-        },
-        destroy: {
-            value: destroy
-        }
-    });
-
-    return Object.freeze(loader);
-};
-
-/*
- * Stats
- */
-
-AssetsLoader.stats = {
-    mbs: 0,
-    secs: 0,
-    update: function(request, startTime, url, log) {
-        var length;
-        var headers = request.getAllResponseHeaders();
-        if (headers) {
-            var match = headers.match(/content-length: (\d+)/i);
-            if (match && match.length) {
-                length = match[1];
-            }
-        }
-        // var length = request.getResponseHeader('Content-Length');
-        if (length) {
-            length = parseInt(length, 10);
-            var mbs = length / 1024 / 1024;
-            var secs = (Date.now() - startTime) / 1000;
-            this.secs += secs;
-            this.mbs += mbs;
-            if (log) {
-                this.log(url, mbs, secs);
-            }
-        } else if(log) {
-            console.warn.call(console, 'Can\'t get Content-Length:', url);
-        }
-    },
-    log: function(url, mbs, secs) {
-        if (url) {
-            var file = 'File loaded: ' +
-                url.substr(url.lastIndexOf('/') + 1) +
-                ' size:' + mbs.toFixed(2) + 'mb' +
-                ' time:' + secs.toFixed(2) + 's' +
-                ' speed:' + (mbs / secs).toFixed(2) + 'mbps';
-
-            console.log.call(console, file);
-        }
-        var total = 'Total loaded: ' + this.mbs.toFixed(2) + 'mb' +
-            ' time:' + this.secs.toFixed(2) + 's' +
-            ' speed:' + this.getMbps().toFixed(2) + 'mbps';
-        console.log.call(console, total);
-    },
-    getMbps: function() {
-        return this.mbs / this.secs;
-    }
-};
-
-module.exports = AssetsLoader;
-
-},{"./emitter.js":3}],2:[function(_dereq_,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.assetsLoader = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -799,6 +298,17 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
+},{}],2:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = (function() {
+    try {
+        return !!new Blob();
+    } catch (e) {
+        return false;
+    }
+}());
+
 },{}],3:[function(_dereq_,module,exports){
 'use strict';
 
@@ -824,6 +334,583 @@ Emitter.prototype.off = function(type, listener) {
 
 module.exports = Emitter;
 
-},{"events":2}]},{},[1])(1)
+},{"events":1}],4:[function(_dereq_,module,exports){
+'use strict';
+
+var Emitter = _dereq_('./emitter.js');
+var createLoader = _dereq_('./loader');
+var autoId = 0;
+
+module.exports = function createGroup(config) {
+    var group;
+    var map = {};
+    var assets = [];
+    var queue = [];
+    var numLoaded = 0;
+    var numTotal = 0;
+    var loaders = {};
+
+    var add = function(options) {
+        // console.debug('add', options);
+        if (Array.isArray(options)) {
+            options.forEach(add);
+            return group;
+        }
+        var isGroup = !!options.assets && Array.isArray(options.assets);
+        // console.debug('isGroup', isGroup);
+        var loader;
+        if (isGroup) {
+            loader = createGroup(configure(options, config));
+        } else {
+            loader = createLoader(configure(options, config));
+        }
+        queue.push(loader);
+        loaders[loader.id] = loader;
+        return group;
+    };
+
+    var get = function(id) {
+        if (!arguments.length) {
+            return assets;
+        }
+        return map[id];
+    };
+
+    var find = function(id) {
+        if (get(id)) {
+            return get(id);
+        }
+        var found = null;
+        // assets.filter(function(asset) {
+        //     return asset.type === 'group';
+        // }).map(function(asset) {
+        //     return loaders[asset.id];
+        // }).some(function(loader) {
+        //     found = loader.find(id);
+        //     return !!found;
+        // });
+        Object.keys(loaders).some(function(key) {
+            found = loaders[key].find && loaders[key].find(id);
+            return !!found;
+        });
+        return found;
+    };
+
+    var getExtension = function(url) {
+        return url && url.split('?')[0].split('.').pop().toLowerCase();
+    };
+
+    var configure = function(options, defaults) {
+        if (typeof options === 'string') {
+            var url = options;
+            options = {
+                url: url
+            };
+        }
+
+        if (options.isTouchLocked === undefined) {
+            options.isTouchLocked = defaults.isTouchLocked;
+        }
+        if (options.blob === undefined) {
+            options.blob = defaults.blob;
+        }
+
+        options.id = options.id || options.url || String(++autoId);
+        options.type = options.type || getExtension(options.url);
+        options.crossOrigin = options.crossOrigin || defaults.crossOrigin;
+        options.webAudioContext = options.webAudioContext || defaults.webAudioContext;
+        options.log = defaults.log;
+
+        return options;
+    };
+
+    var start = function() {
+        numTotal = queue.length;
+
+        queue.forEach(function(loader) {
+            loader
+                .on('progress', progressHandler)
+                .once('complete', completeHandler)
+                .once('error', errorHandler)
+                .start();
+        });
+
+        queue = [];
+
+        return group;
+    };
+
+    var progressHandler = function(progress) {
+        var loaded = numLoaded + progress;
+        group.emit('progress', loaded / numTotal);
+    };
+
+    var completeHandler = function(asset, id, type) {
+        if (Array.isArray(asset)) {
+            asset = { id: id, file: asset, type: type };
+        }
+        numLoaded++;
+        group.emit('progress', numLoaded / numTotal);
+        map[asset.id] = asset.file;
+        assets.push(asset);
+        group.emit('childcomplete', asset);
+        checkComplete();
+    };
+
+    var errorHandler = function(err) {
+        numTotal--;
+        if (group.listeners('error').length) {
+            group.emit('error', err);
+        } else {
+            void 0;
+        }
+        checkComplete();
+    };
+
+    var checkComplete = function() {
+        if (numLoaded >= numTotal) {
+            group.emit('complete', assets, config.id, 'group');
+        }
+    };
+
+    var destroy = function() {
+        while (queue.length) {
+            queue.pop().destroy();
+        }
+        group.off('error');
+        group.off('progress');
+        group.off('complete');
+        assets = [];
+        map = {};
+        config.webAudioContext = null;
+        numTotal = 0;
+        numLoaded = 0;
+
+        return group;
+    };
+
+    // emits: progress, error, complete
+
+    group = Object.create(Emitter.prototype, {
+        _events: {
+            value: {}
+        },
+        id: {
+            get: function() {
+                return config.id;
+            }
+        },
+        add: {
+            value: add
+        },
+        start: {
+            value: start
+        },
+        get: {
+            value: get
+        },
+        find: {
+            value: find
+        },
+        getLoader: {
+            value: function(id) {
+                return loaders[id];
+            }
+        },
+        loaded: {
+            get: function() {
+                return numLoaded >= numTotal;
+            }
+        },
+        file: {
+            get: function() {
+                return assets;
+            }
+        },
+        destroy: {
+            value: destroy
+        }
+    });
+
+    config = configure(config || {}, {
+        blob: false,
+        touchLocked: false,
+        crossOrigin: null,
+        webAudioContext: null,
+        log: false
+    });
+
+    if (Array.isArray(config.assets)) {
+        add(config.assets);
+    }
+
+    return Object.freeze(group);
+};
+
+},{"./emitter.js":3,"./loader":6}],5:[function(_dereq_,module,exports){
+'use strict';
+
+var assetsLoader = _dereq_('./group');
+assetsLoader.stats = _dereq_('./stats');
+
+module.exports = assetsLoader;
+
+},{"./group":4,"./stats":7}],6:[function(_dereq_,module,exports){
+'use strict';
+
+var Emitter = _dereq_('./emitter.js');
+var browserHasBlob = _dereq_('./browser-has-blob.js');
+var stats = _dereq_('./stats');
+
+module.exports = function(options) {
+    var id = options.id;
+    var url = options.url;
+    var type = options.type;
+    var crossOrigin = options.crossOrigin;
+    var isTouchLocked = options.isTouchLocked;
+    var blob = options.blob && browserHasBlob;
+    var webAudioContext = options.webAudioContext;
+    var log = options.log;
+
+    var loader;
+    var loadHandler;
+    var request;
+    var startTime;
+    var timeout;
+    var file;
+
+    var start = function() {
+        startTime = Date.now();
+
+        switch (type) {
+            case 'json':
+                loadJSON();
+                break;
+            case 'jpg':
+            case 'png':
+            case 'gif':
+            case 'webp':
+                loadImage();
+                break;
+            case 'mp3':
+            case 'ogg':
+            case 'opus':
+            case 'wav':
+            case 'm4a':
+                loadAudio();
+                break;
+            case 'ogv':
+            case 'mp4':
+            case 'webm':
+            case 'hls':
+                loadVideo();
+                break;
+            case 'bin':
+            case 'binary':
+                loadXHR('arraybuffer');
+                break;
+            case 'txt':
+            case 'text':
+                loadXHR('text');
+                break;
+            default:
+                throw 'AssetsLoader ERROR: Unknown type for file with URL: ' + url + ' (' + type + ')';
+        }
+    };
+
+    var dispatchComplete = function(data) {
+        if (!data) {
+            return;
+        }
+        file = {id: id, file: data, type: type};
+        loader.emit('progress', 1);
+        loader.emit('complete', file, id, type);
+        removeListeners();
+    };
+
+    var loadXHR = function(responseType, customLoadHandler) {
+        loadHandler = customLoadHandler || completeHandler;
+
+        request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.responseType = responseType;
+        request.addEventListener('progress', progressHandler);
+        request.addEventListener('load', loadHandler);
+        request.addEventListener('error', errorHandler);
+        request.send();
+    };
+
+    var progressHandler = function(event) {
+        if (event.lengthComputable) {
+            loader.emit('progress', event.loaded / event.total);
+        }
+    };
+
+    var completeHandler = function() {
+        if (success()) {
+            dispatchComplete(request.response);
+        }
+    };
+
+    var success = function() {
+        if (request && request.status < 400) {
+            stats.update(request, startTime, url, log);
+            return true;
+        }
+        errorHandler(request && request.statusText);
+        return false;
+    };
+
+    // json
+
+    var loadJSON = function() {
+        loadXHR('json', function() {
+            if (success()) {
+                var data = request.response;
+                if (typeof data === 'string') {
+                    data = JSON.parse(data);
+                }
+                dispatchComplete(data);
+            }
+        });
+    };
+
+    // image
+
+    var loadImage = function() {
+        if (blob) {
+            loadImageBlob();
+        } else {
+            loadImageElement();
+        }
+    };
+
+    var loadImageElement = function() {
+        request = new Image();
+        if (crossOrigin) {
+            request.crossOrigin = 'anonymous';
+        }
+        request.addEventListener('error', errorHandler, false);
+        request.addEventListener('load', elementLoadHandler, false);
+        request.src = url;
+    };
+
+    var elementLoadHandler = function() {
+        window.clearTimeout(timeout);
+        dispatchComplete(request);
+    };
+
+    var loadImageBlob = function() {
+        loadXHR('blob', function() {
+            if (success()) {
+                var url = window.URL.createObjectURL(request.response);
+                request = new Image();
+                request.addEventListener('error', errorHandler, false);
+                request.addEventListener('load', imageBlobHandler, false);
+                request.src = url;
+            }
+        });
+    };
+
+    var imageBlobHandler = function() {
+        window.URL.revokeObjectURL(url);
+        dispatchComplete(request);
+    };
+
+    // audio
+
+    var loadAudio = function() {
+        if (webAudioContext) {
+            loadAudioBuffer();
+        } else {
+            loadMediaElement('audio');
+        }
+    };
+
+    // video
+
+    var loadVideo = function() {
+        if (blob) {
+            loadXHR('blob');
+        } else {
+            loadMediaElement('video');
+        }
+    };
+
+    // audio buffer
+
+    var loadAudioBuffer = function() {
+        loadXHR('arraybuffer', function() {
+            if (success()) {
+                webAudioContext.decodeAudioData(
+                    request.response,
+                    function(buffer) {
+                        request = null;
+                        dispatchComplete(buffer);
+                    },
+                    function(e) {
+                        errorHandler(e);
+                    }
+                );
+            }
+        });
+    };
+
+    // media element
+
+    var loadMediaElement = function(tagName) {
+        request = document.createElement(tagName);
+
+        if (!isTouchLocked) {
+            // timeout because sometimes canplaythrough doesn't fire
+            window.clearTimeout(timeout);
+            timeout = window.setTimeout(elementLoadHandler, 2000);
+            request.addEventListener('canplaythrough', elementLoadHandler, false);
+        }
+
+        request.addEventListener('error', errorHandler, false);
+        request.preload = 'auto';
+        request.src = url;
+        request.load();
+
+        if (isTouchLocked) {
+            dispatchComplete(request);
+        }
+    };
+
+    // error
+
+    var errorHandler = function(err) {
+        window.clearTimeout(timeout);
+
+        var message = err;
+
+        if (request && request.tagName && request.error) {
+            var ERROR_STATE = ['', 'ABORTED', 'NETWORK', 'DECODE', 'SRC_NOT_SUPPORTED'];
+            message = 'MediaError: ' + ERROR_STATE[request.error.code] + ' ' + request.src;
+        } else if (request && request.statusText) {
+            message = request.statusText;
+        } else if (err && err.message) {
+            message = err.message;
+        } else if (err && err.type) {
+            message = err.type;
+        }
+
+        loader.emit('error', 'Error loading "' + url + '" ' + message);
+
+        destroy();
+    };
+
+    // clean up
+
+    var removeListeners = function() {
+        loader.off('error');
+        loader.off('progress');
+        loader.off('complete');
+
+        if (request) {
+            request.removeEventListener('progress', progressHandler);
+            request.removeEventListener('load', loadHandler);
+            request.removeEventListener('error', errorHandler);
+            request.removeEventListener('load', elementLoadHandler);
+            request.removeEventListener('canplaythrough', elementLoadHandler);
+            request.removeEventListener('load', imageBlobHandler);
+        }
+    };
+
+    var destroy = function() {
+        removeListeners();
+
+        if (request && request.abort && request.readyState < 4) {
+            request.abort();
+        }
+
+        request = null;
+        webAudioContext = null;
+        file = null;
+
+        window.clearTimeout(timeout);
+    };
+
+    // emits: progress, error, complete
+
+    loader = Object.create(Emitter.prototype, {
+        _events: {
+            value: {}
+        },
+        id: {
+            value: options.id
+        },
+        start: {
+            value: start
+        },
+        loaded: {
+            get: function() {
+                return !!file;
+            }
+        },
+        file: {
+            get: function() {
+                return file;
+            }
+        },
+        destroy: {
+            value: destroy
+        }
+    });
+
+    return Object.freeze(loader);
+};
+
+},{"./browser-has-blob.js":2,"./emitter.js":3,"./stats":7}],7:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = {
+    mbs: 0,
+    secs: 0,
+    update: function(request, startTime, url, log) {
+        var length;
+        var headers = request.getAllResponseHeaders();
+        if (headers) {
+            var match = headers.match(/content-length: (\d+)/i);
+            if (match && match.length) {
+                length = match[1];
+            }
+        }
+        // var length = request.getResponseHeader('Content-Length');
+        if (length) {
+            length = parseInt(length, 10);
+            var mbs = length / 1024 / 1024;
+            var secs = (Date.now() - startTime) / 1000;
+            this.secs += secs;
+            this.mbs += mbs;
+            if (log) {
+                this.log(url, mbs, secs);
+            }
+        } else if(log) {
+            console.warn.call(console, 'Can\'t get Content-Length:', url);
+        }
+    },
+    log: function(url, mbs, secs) {
+        if (url) {
+            var file = 'File loaded: ' +
+                url.substr(url.lastIndexOf('/') + 1) +
+                ' size:' + mbs.toFixed(2) + 'mb' +
+                ' time:' + secs.toFixed(2) + 's' +
+                ' speed:' + (mbs / secs).toFixed(2) + 'mbps';
+
+            console.log.call(console, file);
+        }
+        var total = 'Total loaded: ' + this.mbs.toFixed(2) + 'mb' +
+            ' time:' + this.secs.toFixed(2) + 's' +
+            ' speed:' + this.getMbps().toFixed(2) + 'mbps';
+        console.log.call(console, total);
+    },
+    getMbps: function() {
+        return this.mbs / this.secs;
+    }
+};
+
+},{}]},{},[5])(5)
 });
 //# sourceMappingURL=assets-loader.js.map
