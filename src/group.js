@@ -74,8 +74,13 @@ module.exports = function createGroup(config) {
         if (options.isTouchLocked === undefined) {
             options.isTouchLocked = defaults.isTouchLocked;
         }
+
         if (options.blob === undefined) {
             options.blob = defaults.blob;
+        }
+
+        if (options.basePath === undefined) {
+            options.basePath = defaults.basePath;
         }
 
         options.id = options.id || options.url || String(++autoId);
@@ -196,6 +201,7 @@ module.exports = function createGroup(config) {
     });
 
     config = configure(config || {}, {
+        basePath: '',
         blob: false,
         touchLocked: false,
         crossOrigin: null,
