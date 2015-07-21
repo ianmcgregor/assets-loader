@@ -106,30 +106,35 @@
     </div>
 
     <pre><code class="js">
-    var images = [];
-    for (var i = 0; i < 4; i++) {
-        images.push({
-            id: ('image' + i),
-            url: 'http://lorempixel.com/200/200?' + i,
-            type: 'jpg'
-        });
-    }
     var loader = assetsLoader()
         .add({
             id: 'groupA',
-            assets: images
+            assets: [{
+                id: 'image0',
+                url: 'http://lorempixel.com/300/300?0',
+                type: 'jpg'
+            },{
+                id: 'image1',
+                url: 'http://lorempixel.com/300/300?1',
+                type: 'jpg'
+            },{
+                id: 'image2',
+                url: 'http://lorempixel.com/300/300?2',
+                type: 'jpg'
+            }]
         })
         .add({
             id: 'groupB',
+            basePath: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/',
             assets: [{
                 id: 'select',
-                url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/select.ogg'
+                url: 'select.ogg'
             },{
                 id: 'collect',
-                url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/collect.ogg'
+                url: 'collect.ogg'
             },{
                 id: 'hit',
-                url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/hit.ogg'
+                url: 'hit.ogg'
             }]
         })
         .on('error', function(error) {
@@ -200,6 +205,7 @@
                 })
             })
             .start();
+
     }());
 
     // video (blob)
@@ -247,30 +253,35 @@
         var container = document.querySelector('[data-js="container-groups"]');
         var containerImages = document.querySelector('[data-js="container-groups-images"]');
         var containerAudio = document.querySelector('[data-js="container-groups-audio"]');
-        var images = [];
-        for (var i = 0; i < 4; i++) {
-            images.push({
-                id: ('image' + i),
-                url: 'http://lorempixel.com/200/200?' + i,
-                type: 'jpg'
-            });
-        }
         var loader = assetsLoader()
             .add({
                 id: 'groupA',
-                assets: images
+                assets: [{
+                    id: 'image0',
+                    url: 'http://lorempixel.com/300/300?0',
+                    type: 'jpg'
+                },{
+                    id: 'image1',
+                    url: 'http://lorempixel.com/300/300?1',
+                    type: 'jpg'
+                },{
+                    id: 'image2',
+                    url: 'http://lorempixel.com/300/300?2',
+                    type: 'jpg'
+                }]
             })
             .add({
                 id: 'groupB',
+                basePath: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/',
                 assets: [{
                     id: 'select',
-                    url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/select.ogg'
+                    url: 'select.ogg'
                 },{
                     id: 'collect',
-                    url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/collect.ogg'
+                    url: 'collect.ogg'
                 },{
                     id: 'hit',
-                    url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/hit.ogg'
+                    url: 'hit.ogg'
                 }]
             })
             .on('error', function(error) {
@@ -312,6 +323,13 @@
                 //
                 // console.debug('find groupB:', loader.find('groupB'));
                 // console.debug('find image1:', loader.find('image1'));
+                var b = document.createElement('button');
+                b.innerHTML = 'destroy';
+                b.addEventListener('click', function() {
+                    loader.destroy();
+                    container.innerHTML = '';
+                });
+                container.appendChild(b);
             });
 
 

@@ -411,8 +411,13 @@ module.exports = function createGroup(config) {
         if (options.isTouchLocked === undefined) {
             options.isTouchLocked = defaults.isTouchLocked;
         }
+
         if (options.blob === undefined) {
             options.blob = defaults.blob;
+        }
+
+        if (options.basePath === undefined) {
+            options.basePath = defaults.basePath;
         }
 
         options.id = options.id || options.url || String(++autoId);
@@ -533,6 +538,7 @@ module.exports = function createGroup(config) {
     });
 
     config = configure(config || {}, {
+        basePath: '',
         blob: false,
         touchLocked: false,
         crossOrigin: null,
@@ -564,6 +570,7 @@ var stats = _dereq_('./stats');
 
 module.exports = function(options) {
     var id = options.id;
+    var basePath = options.basePath || '';
     var url = options.url;
     var type = options.type;
     var crossOrigin = options.crossOrigin;
@@ -614,7 +621,7 @@ module.exports = function(options) {
                 loadXHR('text');
                 break;
             default:
-                throw 'AssetsLoader ERROR: Unknown type for file with URL: ' + url + ' (' + type + ')';
+                throw 'AssetsLoader ERROR: Unknown type for file with URL: ' + basePath + url + ' (' + type + ')';
         }
     };
 
@@ -632,7 +639,7 @@ module.exports = function(options) {
         loadHandler = customLoadHandler || completeHandler;
 
         request = new XMLHttpRequest();
-        request.open('GET', url, true);
+        request.open('GET', basePath + url, true);
         request.responseType = responseType;
         request.addEventListener('progress', progressHandler);
         request.addEventListener('load', loadHandler);
@@ -692,7 +699,7 @@ module.exports = function(options) {
         }
         request.addEventListener('error', errorHandler, false);
         request.addEventListener('load', elementLoadHandler, false);
-        request.src = url;
+        request.src = basePath + url;
     };
 
     var elementLoadHandler = function() {
@@ -703,17 +710,16 @@ module.exports = function(options) {
     var loadImageBlob = function() {
         loadXHR('blob', function() {
             if (success()) {
-                var url = window.URL.createObjectURL(request.response);
                 request = new Image();
                 request.addEventListener('error', errorHandler, false);
                 request.addEventListener('load', imageBlobHandler, false);
-                request.src = url;
+                request.src = window.URL.createObjectURL(request.response);
             }
         });
     };
 
     var imageBlobHandler = function() {
-        window.URL.revokeObjectURL(url);
+        window.URL.revokeObjectURL(request.src);
         dispatchComplete(request);
     };
 
@@ -770,7 +776,7 @@ module.exports = function(options) {
 
         request.addEventListener('error', errorHandler, false);
         request.preload = 'auto';
-        request.src = url;
+        request.src = basePath + url;
         request.load();
 
         if (isTouchLocked) {
@@ -796,7 +802,7 @@ module.exports = function(options) {
             message = err.type;
         }
 
-        loader.emit('error', 'Error loading "' + url + '" ' + message);
+        loader.emit('error', 'Error loading "' + basePath + url + '" ' + message);
 
         destroy();
     };
