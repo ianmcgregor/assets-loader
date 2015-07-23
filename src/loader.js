@@ -272,6 +272,8 @@ module.exports = function(options) {
         file = null;
 
         window.clearTimeout(timeout);
+
+        loader.emit('destroy', id);
     };
 
     // emits: progress, error, complete

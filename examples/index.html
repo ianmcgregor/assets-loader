@@ -326,8 +326,14 @@
                 var b = document.createElement('button');
                 b.innerHTML = 'destroy';
                 b.addEventListener('click', function() {
-                    loader.destroy();
+                    // loader.destroy();
+                    loader.getLoader('groupA').on('destroy', function(id) {
+                        console.debug('--> on destroy:', id);
+                    })
+                    loader.getLoader('groupA').destroy();
                     container.innerHTML = '';
+
+                    console.debug('destroyed? ', loader.get('groupA'), loader.getLoader('groupA'))
                 });
                 container.appendChild(b);
             });
