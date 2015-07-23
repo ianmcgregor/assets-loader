@@ -364,6 +364,7 @@ module.exports = function createGroup(config) {
         } else {
             loader = createLoader(configure(options, config));
         }
+        loader.once('destroy', destroyHandler);
         queue.push(loader);
         loaders[loader.id] = loader;
         return group;
@@ -472,6 +473,21 @@ module.exports = function createGroup(config) {
         checkComplete();
     };
 
+    var destroyHandler = function(id) {
+        loaders[id] = null;
+        delete loaders[id];
+
+        map[id] = null;
+        delete map[id];
+
+        assets.some(function(asset, i) {
+            if (asset.id === id) {
+                assets.splice(i, 1);
+                return true;
+            }
+        });
+    };
+
     var checkComplete = function() {
         if (numLoaded >= numTotal) {
             group.emit('complete', assets, config.id, 'group');
@@ -491,10 +507,17 @@ module.exports = function createGroup(config) {
         numTotal = 0;
         numLoaded = 0;
 
+        Object.keys(loaders).forEach(function(key) {
+            loaders[key].destroy();
+        });
+        loaders = {};
+
+        group.emit('destroy', group.id);
+
         return group;
     };
 
-    // emits: progress, error, complete
+    // emits: progress, error, complete, destroy
 
     group = Object.create(Emitter.prototype, {
         _events: {
@@ -836,6 +859,8 @@ module.exports = function(options) {
         file = null;
 
         window.clearTimeout(timeout);
+
+        loader.emit('destroy', id);
     };
 
     // emits: progress, error, complete
