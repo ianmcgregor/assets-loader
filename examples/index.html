@@ -28,9 +28,7 @@
           type: 'jpg'
       });
   }
-
   var loader = assetsLoader({
-          log: true,
           assets: images
       })
       .on('error', function(error) {
@@ -39,11 +37,10 @@
       .on('progress', function(progress) {
           container.innerHTML = (progress * 100).toFixed() + '%';
       })
-      .on('complete', function(map) {
-          console.log(map);
+      .on('complete', function(assets) {
           container.innerHTML = '';
-          loader.get().forEach(function(image) {
-              container.appendChild(image);
+          assets.forEach(function(asset) {
+              container.appendChild(asset.file);
           })
       })
       .start();
@@ -56,7 +53,6 @@
       <div class="Container" data-js="container-video"></div>
 
       <pre><code class="js">
-  var container = document.querySelector('[data-js="container-video"]');
   var loader = assetsLoader({ log: true })
       .add({
           id: 'video',
@@ -69,25 +65,25 @@
       .on('progress', function(progress) {
           container.innerHTML = (progress * 100).toFixed() + '%';
       })
-      .on('complete', function(map) {
-          console.log(map);
+      .on('complete', function() {
           container.innerHTML = '';
-          var el = document.createElement('video');
-          container.appendChild(el);
-          // var url = files[0];
-          var url = map.video;
-          if (window.Blob && url instanceof window.Blob) {
-              url = window.URL.createObjectURL(url);
+          var src = this.get('video');
+          if (window.Blob && src instanceof window.Blob) {
+              src = window.URL.createObjectURL(src);
+              el = document.createElement('video');
               var revoke = function() {
                   el.removeEventListener('canplaythrough', revoke);
-                  window.URL.revokeObjectURL(url);
+                  window.URL.revokeObjectURL(src);
               };
               el.addEventListener('canplaythrough', revoke);
+              el.preload = 'auto';
+              el.src = src;
+              el.load();
+          } else {
+              el = src
           }
-          el.preload = 'auto';
           el.controls = 'controls';
-          el.src = url;
-          el.load();
+          container.appendChild(el);
       })
       .start();
       </code></pre>
@@ -109,39 +105,27 @@
     var loader = assetsLoader()
         .add({
             id: 'groupA',
-            assets: [{
-                id: 'image0',
-                url: 'http://lorempixel.com/300/300?0',
-                type: 'jpg'
-            },{
-                id: 'image1',
-                url: 'http://lorempixel.com/300/300?1',
-                type: 'jpg'
-            },{
-                id: 'image2',
-                url: 'http://lorempixel.com/300/300?2',
-                type: 'jpg'
-            }]
+            assets: images
         })
         .add({
             id: 'groupB',
             basePath: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/',
-            assets: [{
-                id: 'select',
-                url: 'select.ogg'
-            },{
-                id: 'collect',
-                url: 'collect.ogg'
-            },{
-                id: 'hit',
-                url: 'hit.ogg'
-            }]
+            assets: sounds
         })
         .on('error', function(error) {
             container.innerHTML = error;
         })
-        .on('complete', function(map) {
-            console.log(map);
+        .on('childcomplete', function(asset) {
+            console.debug('childcomplete', asset.id);
+        })
+        .on('complete', function(assets) {
+            assets.forEach(function(asset) {
+                console.debug(asset.id);
+                asset.file.forEach(function(file) {
+                    console.debug(' - ' + file.id);
+                });
+            });
+
             containerImages.innerHTML = '';
             containerAudio.innerHTML = '';
 
@@ -156,19 +140,20 @@
                     asset.file.controls = 'controls';
                     containerAudio.appendChild(asset.file);
                 });
+        });
 
-        })
-        .start();
 
-        loader.group('groupA')
-            .on('progress', function(progress) {
-                containerImages.innerHTML = (progress * 100).toFixed() + '%';
-            });
+    loader.getLoader('groupA')
+        .on('progress', function(progress) {
+            containerImages.innerHTML = (progress * 100).toFixed() + '%';
+        });
 
-        loader.group('groupB')
-            .on('progress', function(progress) {
-                containerAudio.innerHTML = (progress * 100).toFixed() + '%';
-            });
+    loader.getLoader('groupB')
+        .on('progress', function(progress) {
+            containerAudio.innerHTML = (progress * 100).toFixed() + '%';
+        });
+
+    loader.start();
     </code></pre>
 
     </section>

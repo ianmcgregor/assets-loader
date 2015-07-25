@@ -20,11 +20,11 @@ bower install assets-loader --save-dev
 ### Usage
 
 ```javascript
-var AssetsLoader = require('assets-loader');
+var assetsLoader = require('assets-loader');
 
 // load some assets:
 
-var loader = new AssetsLoader({
+var loader = assetsLoader({
         assets: [
             // image
             '/images/picture.png',
@@ -62,26 +62,18 @@ var loader = new AssetsLoader({
     .on('progress', function(progress) {
         console.log((progress * 100).toFixed() + '%');
     })
-    .on('complete', function(map) {
-        // map is a hashmap of loaded files
-        // keys are either ids if specified or urls
-        Object.keys(map).forEach(function(key) {
-            console.log(key, map[key]);
+    .on('complete', function(assets) {
+        assets.forEach(function(asset) {
+            console.log(asset);
         });
-        // get by id from map arg
-        console.log(map.picture); // <img />
         // get by id from loader instance
-        console.log(loader.get('picture')); // <img />
-        // get array of all loaded files
-        loader.get().forEach(function(file) {
-            console.log(file);
-        });
+        console.log(loader.get('picture'));
     })
     .start();
 
 // add assets in separate steps
 
-var loader = new AssetsLoader()
+var loader = assetsLoader()
     .add('audio.mp3')
     .add('picture.jpg')
     .add([
@@ -92,19 +84,23 @@ var loader = new AssetsLoader()
         id: 'video',
         url: 'video.webm'
     })
-    .add([
-        { id: 'a', url: 'a.mp3' },
-        { id: 'b', url: 'b.mp3' }
-    ])
-    .on('complete', function(files, map) {
-        console.log(files, map);
-    });
-
-loader.start();
+    .add({
+        id: 'sounds',
+        assets: [
+            { id: 'a', url: 'a.mp3' },
+            { id: 'b', url: 'b.mp3' }
+        ]
+    })
+    .on('complete', function(assets) {
+        console.log(assets);
+        console.log(loader.get('video'));
+        console.log(loader.get('sounds'));
+    })
+    .start();
 
 // configure values for every file
 
-var loader = new AssetsLoader({
+var loader = assetsLoader({
     blob: true, // only works if browser supports
     crossOrigin: 'anonymous',
     webAudioContext: audioContext,
@@ -119,11 +115,12 @@ var loader = new AssetsLoader({
 // destroy
 
 loader.destroy();
+loader.getLoader('groupId').destroy();
 
 // stats
 
-console.log(AssetsLoader.stats.getMbps()); // e.g. 3.2
-AssetsLoader.stats.log(); // e.g. Total loaded: 2.00mb time: 2.00s speed: 1.00mbps
+console.log(assetsLoader.stats.getMbps()); // e.g. 3.2
+assetsLoader.stats.log(); // e.g. Total loaded: 2.00mb time: 2.00s speed: 1.00mbps
 ```
 
 ### Dev setup
