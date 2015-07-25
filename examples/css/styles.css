@@ -292,7 +292,8 @@ body {
 
 h1,
 h2,
-h3 {
+h3,
+button {
   color: #303030;
   font-weight: 400;
   margin: .5em 0;
@@ -357,4 +358,11 @@ img {
   margin: 0 auto;
   max-width: 1000px;
   width: 90%;
+}
+
+button {
+    border: 1px solid gray;
+    border-radius: 4px;
+    font-size: 32px;
+    padding: 10px;
 }

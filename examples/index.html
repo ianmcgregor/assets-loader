@@ -28,9 +28,7 @@
           type: 'jpg'
       });
   }
-
-  var loader = new AssetsLoader({
-          log: true,
+  var loader = assetsLoader({
           assets: images
       })
       .on('error', function(error) {
@@ -39,11 +37,10 @@
       .on('progress', function(progress) {
           container.innerHTML = (progress * 100).toFixed() + '%';
       })
-      .on('complete', function(map) {
-          console.log(map);
+      .on('complete', function(assets) {
           container.innerHTML = '';
-          loader.get().forEach(function(image) {
-              container.appendChild(image);
+          assets.forEach(function(asset) {
+              container.appendChild(asset.file);
           })
       })
       .start();
@@ -56,8 +53,7 @@
       <div class="Container" data-js="container-video"></div>
 
       <pre><code class="js">
-  var container = document.querySelector('[data-js="container-video"]');
-  var loader = new AssetsLoader({ log: true })
+  var loader = assetsLoader({ log: true })
       .add({
           id: 'video',
           url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm',
@@ -69,28 +65,96 @@
       .on('progress', function(progress) {
           container.innerHTML = (progress * 100).toFixed() + '%';
       })
-      .on('complete', function(map) {
-          console.log(map);
+      .on('complete', function() {
           container.innerHTML = '';
-          var el = document.createElement('video');
-          container.appendChild(el);
-          // var url = files[0];
-          var url = map.video;
-          if (window.Blob && url instanceof window.Blob) {
-              url = window.URL.createObjectURL(url);
+          var src = this.get('video');
+          if (window.Blob && src instanceof window.Blob) {
+              src = window.URL.createObjectURL(src);
+              el = document.createElement('video');
               var revoke = function() {
                   el.removeEventListener('canplaythrough', revoke);
-                  window.URL.revokeObjectURL(url);
+                  window.URL.revokeObjectURL(src);
               };
               el.addEventListener('canplaythrough', revoke);
+              el.preload = 'auto';
+              el.src = src;
+              el.load();
+          } else {
+              el = src
           }
-          el.preload = 'auto';
           el.controls = 'controls';
-          el.src = url;
-          el.load();
+          container.appendChild(el);
       })
       .start();
       </code></pre>
+
+    </section>
+
+    <header>
+      <h2>groups</h2>
+    </header>
+
+    <div class="Container" data-js="container-groups">
+        <h2>group a</h2>
+        <div class="Container" data-js="container-groups-images"></div>
+        <h2>group b</h2>
+        <div class="Container" data-js="container-groups-audio"></div>
+    </div>
+
+    <pre><code class="js">
+    var loader = assetsLoader()
+        .add({
+            id: 'groupA',
+            assets: images
+        })
+        .add({
+            id: 'groupB',
+            basePath: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/',
+            assets: sounds
+        })
+        .on('error', function(error) {
+            container.innerHTML = error;
+        })
+        .on('childcomplete', function(asset) {
+            console.debug('childcomplete', asset.id);
+        })
+        .on('complete', function(assets) {
+            assets.forEach(function(asset) {
+                console.debug(asset.id);
+                asset.file.forEach(function(file) {
+                    console.debug(' - ' + file.id);
+                });
+            });
+
+            containerImages.innerHTML = '';
+            containerAudio.innerHTML = '';
+
+            loader.get('groupA')
+                .forEach(function(asset) {
+                    asset.file.alt = asset.id;
+                    containerImages.appendChild(asset.file);
+                });
+
+            loader.get('groupB')
+                .forEach(function(asset) {
+                    asset.file.controls = 'controls';
+                    containerAudio.appendChild(asset.file);
+                });
+        });
+
+
+    loader.getLoader('groupA')
+        .on('progress', function(progress) {
+            containerImages.innerHTML = (progress * 100).toFixed() + '%';
+        });
+
+    loader.getLoader('groupB')
+        .on('progress', function(progress) {
+            containerAudio.innerHTML = (progress * 100).toFixed() + '%';
+        });
+
+    loader.start();
+    </code></pre>
 
     </section>
 
@@ -110,7 +174,7 @@
                 type: 'jpg'
             });
         }
-        var loader = new AssetsLoader({
+        var loader = assetsLoader({
                 assets: images
             })
             .on('error', function(error) {
@@ -119,21 +183,21 @@
             .on('progress', function(progress) {
                 container.innerHTML = (progress * 100).toFixed() + '%';
             })
-            .on('complete', function(map) {
-                console.log(map);
+            .on('complete', function(assets) {
                 container.innerHTML = '';
-                this.get().forEach(function(image) {
-                    container.appendChild(image);
+                assets.forEach(function(asset) {
+                    container.appendChild(asset.file);
                 })
             })
             .start();
+
     }());
 
     // video (blob)
 
     (function() {
         var container = document.querySelector('[data-js="container-video"]');
-        var loader = new AssetsLoader({ log: true })
+        var loader = assetsLoader({ log: true })
             .add({
                 id: 'video',
                 url: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/video/counter.webm',
@@ -145,11 +209,9 @@
             .on('progress', function(progress) {
                 container.innerHTML = (progress * 100).toFixed() + '%';
             })
-            .on('complete', function(map) {
-                console.log(map);
+            .on('complete', function() {
                 container.innerHTML = '';
-                // var src = files[0];
-                var src = map.video;
+                var src = this.get('video');
                 if (window.Blob && src instanceof window.Blob) {
                     src = window.URL.createObjectURL(src);
                     el = document.createElement('video');
@@ -170,9 +232,113 @@
             .start();
     }());
 
-    // json
+    // groups
 
-    // audio
+    (function() {
+        var container = document.querySelector('[data-js="container-groups"]');
+        var containerImages = document.querySelector('[data-js="container-groups-images"]');
+        var containerAudio = document.querySelector('[data-js="container-groups-audio"]');
+        var loader = assetsLoader()
+            .add({
+                id: 'groupA',
+                assets: [{
+                    id: 'image0',
+                    url: 'http://lorempixel.com/300/300?0',
+                    type: 'jpg'
+                },{
+                    id: 'image1',
+                    url: 'http://lorempixel.com/300/300?1',
+                    type: 'jpg'
+                },{
+                    id: 'image2',
+                    url: 'http://lorempixel.com/300/300?2',
+                    type: 'jpg'
+                }]
+            })
+            .add({
+                id: 'groupB',
+                basePath: 'https://dl.dropboxusercontent.com/u/15470024/prototypes/audio/',
+                assets: [{
+                    id: 'select',
+                    url: 'select.ogg'
+                },{
+                    id: 'collect',
+                    url: 'collect.ogg'
+                },{
+                    id: 'hit',
+                    url: 'hit.ogg'
+                }]
+            })
+            .on('error', function(error) {
+                container.innerHTML = error;
+            })
+            .on('childcomplete', function(asset) {
+                console.debug('childcomplete', asset.id);
+            })
+            .on('complete', function(assets) {
+                assets.forEach(function(asset) {
+                    console.debug(asset.id);
+                    asset.file.forEach(function(file) {
+                        console.debug(' - ' + file.id);
+                    });
+                });
+
+                containerImages.innerHTML = '';
+                containerAudio.innerHTML = '';
+
+                loader.get('groupA')
+                    .forEach(function(asset) {
+                        asset.file.alt = asset.id;
+                        containerImages.appendChild(asset.file);
+                    });
+
+                loader.get('groupB')
+                    .forEach(function(asset) {
+                        asset.file.controls = 'controls';
+                        containerAudio.appendChild(asset.file);
+                    });
+
+                // console.debug('select sound asset:', b.get('select'), b.getLoader('select').loaded);
+                // console.debug('select loaded:', b.getLoader('select').loaded);
+                // console.debug('select loader file:', b.getLoader('select').file);
+                //
+                // console.debug('loader loaded:', loader.loaded);
+                // console.debug('groupA loaded:', loader.getLoader('groupA').loaded);
+                // console.debug('groupB loaded:', loader.getLoader('groupB').loaded);
+                //
+                // console.debug('find groupB:', loader.find('groupB'));
+                // console.debug('find image1:', loader.find('image1'));
+                var b = document.createElement('button');
+                b.innerHTML = 'destroy';
+                b.addEventListener('click', function() {
+                    // loader.destroy();
+                    loader.getLoader('groupA').on('destroy', function(id) {
+                        console.debug('--> on destroy:', id);
+                    })
+                    loader.getLoader('groupA').destroy();
+                    container.innerHTML = '';
+
+                    console.debug('destroyed? ', loader.get('groupA'), loader.getLoader('groupA'))
+                });
+                container.appendChild(b);
+            });
+
+
+            loader.getLoader('groupA')
+                .on('progress', function(progress) {
+                    containerImages.innerHTML = (progress * 100).toFixed() + '%';
+                });
+
+            var b = loader.getLoader('groupB')
+                .on('progress', function(progress) {
+                    containerAudio.innerHTML = (progress * 100).toFixed() + '%';
+                });
+
+            // console.debug('select sound loader:', b.getLoader('select'));
+
+            loader.start();
+
+    }());
 
     </script>
 </body>

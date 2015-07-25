@@ -18,6 +18,9 @@
     }
   ],
   "json": [
-    "http://graph.facebook.com/facebook"
+    "https://dl.dropboxusercontent.com/u/15470024/prototypes/test/test.json"
+  ],
+  "text": [
+    "https://dl.dropboxusercontent.com/u/15470024/prototypes/video/tracking/tracking_01.txt"
   ]
 }

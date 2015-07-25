@@ -29,6 +29,7 @@ describe('asset loader', function() {
       url: files.json,
       type: 'json'
     })
+    .add(files.text)
     .add(files.images);
 
     beforeEach(function(done) {
@@ -91,7 +92,7 @@ describe('asset loader', function() {
     it ('should have loaded json', function() {
       expect(loader.get(files.json)).to.exist;
       expect(loader.get(files.json)).to.be.an('object');
-      expect(loader.get(files.json).about).to.be.a('string');
+      expect(loader.get(files.json).name).to.be.a('string');
     });
 
     it ('should have recorded stats', function() {
