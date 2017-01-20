@@ -96,6 +96,7 @@ module.exports = function(options) {
     };
 
     var success = function() {
+        // console.log('success', url, request.status);
         if (request && request.status < 400) {
             stats.update(request, startTime, url, log);
             return true;
@@ -138,8 +139,12 @@ module.exports = function(options) {
         request.src = basePath + url;
     };
 
-    var elementLoadHandler = function() {
+    var elementLoadHandler = function(event) {
         window.clearTimeout(timeout);
+        if (!event && (request.error || !request.readyState)) {
+            errorHandler();
+            return;
+        }
         dispatchComplete(request);
     };
 
@@ -223,6 +228,7 @@ module.exports = function(options) {
     // error
 
     var errorHandler = function(err) {
+        // console.log('errorHandler', url, err);
         window.clearTimeout(timeout);
 
         var message = err;
