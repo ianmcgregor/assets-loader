@@ -153,7 +153,7 @@ module.exports = function createGroup(config) {
 
     var checkComplete = function() {
         if (numLoaded >= numTotal) {
-            group.emit('complete', assets, config.id, 'group');
+            group.emit('complete', assets, map, config.id, 'group');
         }
     };
 
