@@ -1,6 +1,6 @@
 {
   "name": "assets-loader",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A simple batch assets loader.",
   "keywords": [
     "loader",
@@ -16,7 +16,9 @@
   "license": "MIT",
   "main": "src/index.js",
   "scripts": {
-    "test": "./node_modules/.bin/karma start --single-run --browsers Firefox"
+    "start": "gulp",
+    "build": "gulp release",
+    "test": "karma start --single-run --browsers Chrome"
   },
   "readmeFilename": "README.md",
   "repository": {

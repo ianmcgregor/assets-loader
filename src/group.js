@@ -37,7 +37,10 @@ module.exports = function createGroup(config) {
         if (!arguments.length) {
             return assets;
         }
-        return map[id];
+        if (map[id]) {
+            return map[id];
+        }
+        return loaders[id];
     };
 
     var find = function(id) {
@@ -45,14 +48,6 @@ module.exports = function createGroup(config) {
             return get(id);
         }
         var found = null;
-        // assets.filter(function(asset) {
-        //     return asset.type === 'group';
-        // }).map(function(asset) {
-        //     return loaders[asset.id];
-        // }).some(function(loader) {
-        //     found = loader.find(id);
-        //     return !!found;
-        // });
         Object.keys(loaders).some(function(key) {
             found = loaders[key].find && loaders[key].find(id);
             return !!found;

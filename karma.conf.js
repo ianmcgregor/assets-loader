@@ -6,6 +6,12 @@ module.exports = function(config) {
     // base path, that will be used to resolve files and exclude
     basePath: '',
 
+    client: {
+        mocha: {
+            timeout: 20000
+        }
+    },
+
     plugins: [
       'karma-mocha',
       'karma-chai',
