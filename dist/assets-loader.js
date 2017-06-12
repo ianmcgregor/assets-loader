@@ -374,7 +374,10 @@ module.exports = function createGroup(config) {
         if (!arguments.length) {
             return assets;
         }
-        return map[id];
+        if (map[id]) {
+            return map[id];
+        }
+        return loaders[id];
     };
 
     var find = function(id) {
@@ -382,14 +385,6 @@ module.exports = function createGroup(config) {
             return get(id);
         }
         var found = null;
-        // assets.filter(function(asset) {
-        //     return asset.type === 'group';
-        // }).map(function(asset) {
-        //     return loaders[asset.id];
-        // }).some(function(loader) {
-        //     found = loader.find(id);
-        //     return !!found;
-        // });
         Object.keys(loaders).some(function(key) {
             found = loaders[key].find && loaders[key].find(id);
             return !!found;
@@ -490,7 +485,7 @@ module.exports = function createGroup(config) {
 
     var checkComplete = function() {
         if (numLoaded >= numTotal) {
-            group.emit('complete', assets, config.id, 'group');
+            group.emit('complete', assets, map, config.id, 'group');
         }
     };
 
@@ -683,6 +678,7 @@ module.exports = function(options) {
     };
 
     var success = function() {
+        // console.log('success', url, request.status);
         if (request && request.status < 400) {
             stats.update(request, startTime, url, log);
             return true;
@@ -725,8 +721,12 @@ module.exports = function(options) {
         request.src = basePath + url;
     };
 
-    var elementLoadHandler = function() {
+    var elementLoadHandler = function(event) {
         window.clearTimeout(timeout);
+        if (!event && (request.error || !request.readyState)) {
+            errorHandler();
+            return;
+        }
         dispatchComplete(request);
     };
 
@@ -810,6 +810,7 @@ module.exports = function(options) {
     // error
 
     var errorHandler = function(err) {
+        // console.log('errorHandler', url, err);
         window.clearTimeout(timeout);
 
         var message = err;
