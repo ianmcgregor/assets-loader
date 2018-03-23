@@ -615,6 +615,7 @@ module.exports = function(options) {
             case 'png':
             case 'gif':
             case 'webp':
+            case 'svg':
                 loadImage();
                 break;
             case 'mp3':
