@@ -19,6 +19,10 @@ describe('asset loader', function() {
       type: 'jpg'
     })
     .add({
+      url: files.svg,
+      type: 'svg'
+    })
+    .add({
       url: files.imageXHR,
       type: 'jpg',
       useImageXHR: true
@@ -45,6 +49,7 @@ describe('asset loader', function() {
 
         // manual tests to view on karma debug page:
         document.body.appendChild(loader.get(files.image));
+        document.body.appendChild(loader.get(files.svg));
         document.body.appendChild(loader.get(files.imageXHR));
         document.body.insertAdjacentHTML('beforeend', JSON.stringify(loader.get(files.json)));
         loader.get(files.audio).setAttribute('controls', 'controls');
@@ -72,6 +77,11 @@ describe('asset loader', function() {
     it ('should have loaded image element', function() {
       expect(loader.get(files.image)).to.exist;
       expect(loader.get(files.image).tagName).to.eql('IMG');
+    });
+
+    it ('should have a SVG element', function() {
+      expect(loader.get(files.svg)).to.exist;
+      expect(loader.get(files.svg).tagName).to.eql('IMG');
     });
 
     it ('should have loaded image blob', function() {

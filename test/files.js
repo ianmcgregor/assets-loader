@@ -9,6 +9,7 @@ var extVideo = (elVideo.canPlayType('video/webm;') ? 'webm' : 'mp4');
 
 module.exports = {
   'image': assets.image[0],
+  'svg': assets.svg,
   'imageXHR': assets.image[1],
   'audio': assets.audio[0][extAudio],
   'video': assets.video[0][extVideo],
