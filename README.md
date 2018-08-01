@@ -123,6 +123,34 @@ console.log(assetsLoader.stats.getMbps()); // e.g. 3.2
 assetsLoader.stats.log(); // e.g. Total loaded: 2.00mb time: 2.00s speed: 1.00mbps
 ```
 
+### Create an `assets.json` file
+Sometimes you may need to load a lot of assets. A simple solution for that is to generate an `assets.json` file listing all your assets. Here is a bash script to do that:
+
+```bash
+#!/bin/bash
+
+# Assign found results to an array 
+# Source: https://stackoverflow.com/a/23357277/616095
+assets=()
+while IFS=read -r -d $'\0'; do assets+=("${REPLY//static\//}")
+
+# Filter results (excluding static/fonts folder)
+# Source: http://www.liamdelahunty.com/tips/linux_find_exclude_multiple_directories.php
+done < <(find static \( -path static/fonts -o -name ".*" \) -prune -o -type f -print0)
+
+# Format an array to JSON (require https://github.com/stedolan/jq)
+# Source: https://stackoverflow.com/a/26809318/616095
+printf '%s\n' "${assets[@]}" | jq -R . | jq -s . > dest/assets.json
+```
+
+This script assumed that your assets are located in a `static/` folder and write the result to `dest/assets.json`. After running the script you just have to require your JSON file:
+
+```javascript
+new assetsLoader({
+    assets: require('dest/assets.json')
+})
+```
+
 ### Dev setup
 
 To install dependencies:
