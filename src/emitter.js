@@ -1,6 +1,6 @@
 'use strict';
 
-var EventEmitter = require('events').EventEmitter;
+var EventEmitter = require('./events').EventEmitter;
 
 function Emitter() {
     EventEmitter.call(this);
