@@ -1,3 +1,5 @@
+"use strict";
+
 const assetsLoader = require('../src/index.js');
 const files = require('./files.js');
 
