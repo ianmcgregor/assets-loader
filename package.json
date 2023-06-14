@@ -31,7 +31,6 @@
     "bundle-collapser": "^1.2.0",
     "chai": "^3.0.0",
     "chalk": "^1.1.0",
-    "events": "^1.0.2",
     "exorcist": "^0.4.0",
     "gulp": "^3.9.0",
     "gulp-derequire": "^2.1.0",
@@ -51,5 +50,6 @@
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
     "watchify": "^3.2.3"
-  }
+  },
+  "dependencies": {}
 }

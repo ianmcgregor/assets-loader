@@ -1,4 +1,40 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.assetsLoader = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = (function() {
+    try {
+        return !!new Blob();
+    } catch (e) {
+        return false;
+    }
+}());
+
+},{}],2:[function(_dereq_,module,exports){
+'use strict';
+
+var EventEmitter = _dereq_('./events').EventEmitter;
+
+function Emitter() {
+    EventEmitter.call(this);
+    this.setMaxListeners(20);
+}
+
+Emitter.prototype = Object.create(EventEmitter.prototype);
+Emitter.prototype.constructor = Emitter;
+
+Emitter.prototype.off = function(type, listener) {
+    if (listener) {
+        return this.removeListener(type, listener);
+    }
+    if (type) {
+        return this.removeAllListeners(type);
+    }
+    return this.removeAllListeners();
+};
+
+module.exports = Emitter;
+
+},{"./events":3}],3:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,8 +94,12 @@ EventEmitter.prototype.emit = function(type) {
       er = arguments[1];
       if (er instanceof Error) {
         throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
       }
-      throw TypeError('Uncaught, unspecified "error" event.');
     }
   }
 
@@ -82,18 +122,11 @@ EventEmitter.prototype.emit = function(type) {
         break;
       // slower
       default:
-        len = arguments.length;
-        args = new Array(len - 1);
-        for (i = 1; i < len; i++)
-          args[i - 1] = arguments[i];
+        args = Array.prototype.slice.call(arguments, 1);
         handler.apply(this, args);
     }
   } else if (isObject(handler)) {
-    len = arguments.length;
-    args = new Array(len - 1);
-    for (i = 1; i < len; i++)
-      args[i - 1] = arguments[i];
-
+    args = Array.prototype.slice.call(arguments, 1);
     listeners = handler.slice();
     len = listeners.length;
     for (i = 0; i < len; i++)
@@ -131,7 +164,6 @@ EventEmitter.prototype.addListener = function(type, listener) {
 
   // Check for listener leak
   if (isObject(this._events[type]) && !this._events[type].warned) {
-    var m;
     if (!isUndefined(this._maxListeners)) {
       m = this._maxListeners;
     } else {
@@ -140,10 +172,13 @@ EventEmitter.prototype.addListener = function(type, listener) {
 
     if (m && m > 0 && this._events[type].length > m) {
       this._events[type].warned = true;
-      void 0;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
       if (typeof console.trace === 'function') {
         // not supported in IE 10
-        void 0;
+        console.trace();
       }
     }
   }
@@ -250,7 +285,7 @@ EventEmitter.prototype.removeAllListeners = function(type) {
 
   if (isFunction(listeners)) {
     this.removeListener(type, listeners);
-  } else {
+  } else if (listeners) {
     // LIFO order
     while (listeners.length)
       this.removeListener(type, listeners[listeners.length - 1]);
@@ -271,15 +306,20 @@ EventEmitter.prototype.listeners = function(type) {
   return ret;
 };
 
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
 EventEmitter.listenerCount = function(emitter, type) {
-  var ret;
-  if (!emitter._events || !emitter._events[type])
-    ret = 0;
-  else if (isFunction(emitter._events[type]))
-    ret = 1;
-  else
-    ret = emitter._events[type].length;
-  return ret;
+  return emitter.listenerCount(type);
 };
 
 function isFunction(arg) {
@@ -298,43 +338,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],2:[function(_dereq_,module,exports){
-'use strict';
-
-module.exports = (function() {
-    try {
-        return !!new Blob();
-    } catch (e) {
-        return false;
-    }
-}());
-
-},{}],3:[function(_dereq_,module,exports){
-'use strict';
-
-var EventEmitter = _dereq_('events').EventEmitter;
-
-function Emitter() {
-    EventEmitter.call(this);
-    this.setMaxListeners(20);
-}
-
-Emitter.prototype = Object.create(EventEmitter.prototype);
-Emitter.prototype.constructor = Emitter;
-
-Emitter.prototype.off = function(type, listener) {
-    if (listener) {
-        return this.removeListener(type, listener);
-    }
-    if (type) {
-        return this.removeAllListeners(type);
-    }
-    return this.removeAllListeners();
-};
-
-module.exports = Emitter;
-
-},{"events":1}],4:[function(_dereq_,module,exports){
+},{}],4:[function(_dereq_,module,exports){
 'use strict';
 
 var Emitter = _dereq_('./emitter.js');
@@ -463,7 +467,7 @@ module.exports = function createGroup(config) {
         if (group.listeners('error').length) {
             group.emit('error', err);
         } else {
-            void 0;
+            console.error(err);
         }
         checkComplete();
     };
@@ -571,7 +575,7 @@ module.exports = function createGroup(config) {
     return Object.freeze(group);
 };
 
-},{"./emitter.js":3,"./loader":6}],5:[function(_dereq_,module,exports){
+},{"./emitter.js":2,"./loader":6}],5:[function(_dereq_,module,exports){
 'use strict';
 
 var assetsLoader = _dereq_('./group');
@@ -895,7 +899,7 @@ module.exports = function(options) {
     return Object.freeze(loader);
 };
 
-},{"./browser-has-blob.js":2,"./emitter.js":3,"./stats":7}],7:[function(_dereq_,module,exports){
+},{"./browser-has-blob.js":1,"./emitter.js":2,"./stats":7}],7:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = {
